@@ -69,7 +69,7 @@ describe("createRpc builder", () => {
 
       const result = await client.add(2, 3);
 
-      expect(mockApi.call).toHaveBeenCalledWith("add", [2, 3]);
+      expect(mockApi.call).toHaveBeenCalledWith("add", 2, 3);
       expect(result).toBe(5);
     });
 
@@ -82,7 +82,7 @@ describe("createRpc builder", () => {
 
       const stream = client.items(10);
 
-      expect(mockApi.stream).toHaveBeenCalledWith("items", [10]);
+      expect(mockApi.stream).toHaveBeenCalledWith("items", 10);
       expect(stream).toBe(mockStream);
     });
 
@@ -205,8 +205,8 @@ describe("createRpc builder", () => {
       const regularResult = await client.regularMethod();
       const streamResult = client.streamMethod(10);
 
-      expect(mockApi.call).toHaveBeenCalledWith("regularMethod", []);
-      expect(mockApi.stream).toHaveBeenCalledWith("streamMethod", [10]);
+      expect(mockApi.call).toHaveBeenCalledWith("regularMethod");
+      expect(mockApi.stream).toHaveBeenCalledWith("streamMethod", 10);
       expect(regularResult).toBe("regular");
       expect(streamResult).toBe(mockStream);
     });

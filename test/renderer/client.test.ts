@@ -47,7 +47,7 @@ describe("createRpcClient", () => {
     const client = createRpcClient();
     const result = await client.call("add", 1, 2);
 
-    expect(mockApi.call).toHaveBeenCalledWith("add", [1, 2]);
+    expect(mockApi.call).toHaveBeenCalledWith("add", 1, 2);
     expect(result).toBe(42);
   });
 
@@ -65,7 +65,7 @@ describe("createRpcClient", () => {
     const client = createRpcClient();
     client.notify("log", "message");
 
-    expect(mockApi.notify).toHaveBeenCalledWith("log", ["message"]);
+    expect(mockApi.notify).toHaveBeenCalledWith("log", "message");
   });
 
   it("creates stream via API", () => {
@@ -75,7 +75,7 @@ describe("createRpcClient", () => {
     const client = createRpcClient();
     const stream = client.stream("dataStream", 10);
 
-    expect(mockApi.stream).toHaveBeenCalledWith("dataStream", [10]);
+    expect(mockApi.stream).toHaveBeenCalledWith("dataStream", 10);
     expect(stream).toBe(mockStream);
   });
 
@@ -191,7 +191,7 @@ describe("createTypedRpcClient", () => {
     const client = createTypedRpcClient<TestApi>();
     const result = await client.add(2, 3);
 
-    expect(mockApi.call).toHaveBeenCalledWith("add", [2, 3]);
+    expect(mockApi.call).toHaveBeenCalledWith("add", 2, 3);
     expect(result).toBe(5);
   });
 
@@ -201,7 +201,7 @@ describe("createTypedRpcClient", () => {
     const client = createTypedRpcClient<TestApi>();
     const result = await client.greet("World");
 
-    expect(mockApi.call).toHaveBeenCalledWith("greet", ["World"]);
+    expect(mockApi.call).toHaveBeenCalledWith("greet", "World");
     expect(result).toBe("Hello, World!");
   });
 
@@ -252,7 +252,7 @@ describe("useRpcProxy", () => {
     // @ts-expect-error - testing dynamic access
     const result = await proxy.testMethod("arg");
 
-    expect(mockApi.call).toHaveBeenCalledWith("testMethod", ["arg"]);
+    expect(mockApi.call).toHaveBeenCalledWith("testMethod", "arg");
     expect(result).toBe("ok");
   });
 });
@@ -279,6 +279,6 @@ describe("defineRpcApi", () => {
     const result = await api.multiply(2, 4);
 
     expect(result).toBe(8);
-    expect(mockApi.call).toHaveBeenCalledWith("multiply", [2, 4]);
+    expect(mockApi.call).toHaveBeenCalledWith("multiply", 2, 4);
   });
 });

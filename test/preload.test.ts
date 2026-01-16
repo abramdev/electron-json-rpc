@@ -177,7 +177,7 @@ describe("createPreloadClient", () => {
       const client = createPreloadClient(mockIpcRenderer as any);
 
       // Setup a listener to simulate response
-      client.call("testMethod", [1, 2, 3]);
+      client.call("testMethod", 1, 2, 3);
 
       // Verify send was called
       expect(mockIpcRenderer.send).toHaveBeenCalledWith("json-rpc", {
