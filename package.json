@@ -1,0 +1,89 @@
+{
+  "name": "electron-json-rpc",
+  "version": "0.1.0-beta.0",
+  "description": "JSON-RPC implementation for Electron",
+  "license": "MIT",
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./main": {
+      "types": "./dist/main.d.ts",
+      "import": "./dist/main.js"
+    },
+    "./preload": {
+      "types": "./dist/preload.d.ts",
+      "import": "./dist/preload.js"
+    },
+    "./renderer": {
+      "types": "./dist/renderer/index.d.ts",
+      "import": "./dist/renderer/index.js"
+    },
+    "./renderer/client": {
+      "types": "./dist/renderer/client.d.ts",
+      "import": "./dist/renderer/client.js"
+    },
+    "./renderer/builder": {
+      "types": "./dist/renderer/builder.d.ts",
+      "import": "./dist/renderer/builder.js"
+    },
+    "./renderer/event": {
+      "types": "./dist/renderer/event.d.ts",
+      "import": "./dist/renderer/event.js"
+    },
+    "./stream": {
+      "types": "./dist/stream.d.ts",
+      "import": "./dist/stream.js"
+    },
+    "./event": {
+      "types": "./dist/event.d.ts",
+      "import": "./dist/event.js"
+    },
+    "./debug": {
+      "types": "./dist/debug.d.ts",
+      "import": "./dist/debug.js"
+    }
+  },
+  "scripts": {
+    "lint": "oxlint",
+    "format": "oxfmt .",
+    "format:check": "oxfmt --check .",
+    "typecheck": "tsc --noEmit",
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "prepublishOnly": "bun run typecheck && bun run lint && bun run test:run && bun run build",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:ui": "vitest --ui",
+    "release": "semantic-release"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^20.3.1",
+    "@commitlint/config-conventional": "^20.3.1",
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/git": "^10.0.1",
+    "@types/bun": "latest",
+    "@types/node": "^25.0.8",
+    "@vitest/coverage-v8": "^4.0.17",
+    "@vitest/ui": "^4.0.17",
+    "electron": "^39.2.7",
+    "happy-dom": "^20.3.1",
+    "oxfmt": "^0.24.0",
+    "oxlint": "^1.39.0",
+    "semantic-release": "^25.0.2",
+    "tsdown": "^0.20.0-beta.3",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.17"
+  },
+  "peerDependencies": {
+    "electron": "*"
+  }
+}

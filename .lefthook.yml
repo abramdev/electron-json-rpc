@@ -1,0 +1,12 @@
+pre-commit:
+  parallel: true
+  commands:
+    oxlint:
+      run: bun run lint
+    oxfmt:
+      run: bun run format:check
+
+commit-msg:
+  commands:
+    commitlint:
+      run: bunx commitlint --edit ${1}

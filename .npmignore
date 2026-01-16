@@ -1,0 +1,67 @@
+# Source
+src
+*.ts
+!*.d.ts
+
+# Tests
+test
+*.test.ts
+*.spec.ts
+
+# Build
+tsconfig.json
+tsconfig.*.json
+tsdown.config.ts
+
+# Dependencies
+node_modules
+bun.lockb
+bun.lock
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Linting & Formatting
+.editorconfig
+.eslintrc*
+.prettierrc*
+oxlint.json
+.lefthook.yml
+
+# Coverage
+coverage
+*.lcov
+
+# Logs
+logs
+*.log
+
+# Environment
+.env
+.env.*
+
+# Cache
+.eslintcache
+.cache
+*.tsbuildinfo
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build output (other than dist)
+out
+*.tgz
+
+# Claude Code
+.claude
+CLAUDE.md
+
+# Vitest
+vitest.config.ts
