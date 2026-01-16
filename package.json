@@ -7,48 +7,48 @@
     "dist"
   ],
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
     },
     "./main": {
-      "types": "./dist/main.d.ts",
-      "import": "./dist/main.js"
+      "types": "./dist/main.d.mts",
+      "import": "./dist/main.mjs"
     },
     "./preload": {
-      "types": "./dist/preload.d.ts",
-      "import": "./dist/preload.js"
+      "types": "./dist/preload.d.mts",
+      "import": "./dist/preload.mjs"
     },
     "./renderer": {
-      "types": "./dist/renderer/index.d.ts",
-      "import": "./dist/renderer/index.js"
+      "types": "./dist/renderer/index.d.mts",
+      "import": "./dist/renderer/index.mjs"
     },
     "./renderer/client": {
-      "types": "./dist/renderer/client.d.ts",
-      "import": "./dist/renderer/client.js"
+      "types": "./dist/renderer/client.d.mts",
+      "import": "./dist/renderer/client.mjs"
     },
     "./renderer/builder": {
-      "types": "./dist/renderer/builder.d.ts",
-      "import": "./dist/renderer/builder.js"
+      "types": "./dist/renderer/builder.d.mts",
+      "import": "./dist/renderer/builder.mjs"
     },
     "./renderer/event": {
-      "types": "./dist/renderer/event.d.ts",
-      "import": "./dist/renderer/event.js"
+      "types": "./dist/renderer/event.d.mts",
+      "import": "./dist/renderer/event.mjs"
     },
     "./stream": {
-      "types": "./dist/stream.d.ts",
-      "import": "./dist/stream.js"
+      "types": "./dist/stream.d.mts",
+      "import": "./dist/stream.mjs"
     },
     "./event": {
-      "types": "./dist/event.d.ts",
-      "import": "./dist/event.js"
+      "types": "./dist/event.d.mts",
+      "import": "./dist/event.mjs"
     },
     "./debug": {
-      "types": "./dist/debug.d.ts",
-      "import": "./dist/debug.js"
+      "types": "./dist/debug.d.mts",
+      "import": "./dist/debug.mjs"
     }
   },
   "scripts": {
