@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/abramdev/electron-json-rpc/compare/v1.1.0...v1.1.1) (2026-01-17)
+
+
+### Bug Fixes
+
+* resolve circular reference in IpcSerializable type ([0277e78](https://github.com/abramdev/electron-json-rpc/commit/0277e7828ef74ea19e9819f3bea68d8ea175bdbf))
+
 # [1.1.0](https://github.com/abramdev/electron-json-rpc/compare/v1.0.1...v1.1.0) (2026-01-17)
 
 
