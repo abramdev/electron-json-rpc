@@ -25,6 +25,62 @@ npm install electron-json-rpc
 - **超时处理** - 可配置的 RPC 调用超时
 - **批量请求** - 支持单次调用发送多个请求
 
+## 可序列化类型
+
+本库使用 Electron IPC，内部使用**结构化克隆算法**（Structured Clone Algorithm）进行序列化。这意味着你可以传递比 JSON 更多的类型：
+
+| 类型                | 支持 | 说明                                   |
+| ------------------- | ---- | -------------------------------------- |
+| 基本类型            | ✅   | string、number、boolean、bigint        |
+| null / undefined    | ✅   | undefined 会保留（不会像 JSON 那样变成 null） |
+| 普通对象            | ✅   | 包含可序列化属性的对象                 |
+| 数组                | ✅   | 包括嵌套数组和稀疏数组                 |
+| Date                | ✅   | 保留 Date 对象                         |
+| RegExp              | ✅   | 保留正则表达式和标志                   |
+| Map / Set           | ✅   | 内容可序列化的 Map 和 Set              |
+| ArrayBuffer         | ✅   | 二进制数据                             |
+| Typed Arrays        | ✅   | Int8Array、Uint8Array 等               |
+| Error 对象          | ✅   | 包括堆栈信息                           |
+| 循环引用            | ✅   | 可以正确处理                           |
+
+**不支持的类型：**
+
+- 函数
+- DOM 节点
+- 类实例（除了内置类型如 Date、Map、Set、Error）
+- Symbol
+
+### 示例
+
+```typescript
+// 主进程
+rpc.register("getData", () => ({
+  date: new Date(),
+  regex: /test/gi,
+  map: new Map([["key", "value"]]),
+  buffer: new ArrayBuffer(8),
+}));
+
+// 渲染进程 - 所有类型都正确保留！
+const data = await rpc.getData();
+console.log(data.date instanceof Date);        // true
+console.log(data.regex instanceof RegExp);      // true
+console.log(data.map instanceof Map);          // true
+console.log(data.buffer instanceof ArrayBuffer); // true
+```
+
+### TypeScript 类型
+
+你可以使用 `IpcSerializable` 类型来确保值是可序列化的：
+
+```typescript
+import type { IpcSerializable } from "electron-json-rpc/types";
+
+function sendToRenderer(data: IpcSerializable) {
+  rpc.publish("event", data); // 类型安全！
+}
+```
+
 ## 快速开始
 
 ### 主进程

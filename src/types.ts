@@ -228,3 +228,62 @@ export interface RpcDebugOptions {
   /** Custom logger function */
   logger?: RpcLogger;
 }
+
+/**
+ * All types that can be serialized by Electron IPC using the Structured Clone Algorithm.
+ *
+ * Electron IPC internally uses structured clone, not JSON, which supports many more types.
+ *
+ * @see https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm
+ * @see https://www.electronjs.org/docs/latest/tutorial/ipc#ipc-messages
+ *
+ * @example
+ * ```typescript
+ * import type { IpcSerializable } from 'electron-json-rpc/types';
+ *
+ * const data: IpcSerializable = new Date(); // OK
+ * ```
+ */
+export type IpcSerializable =
+  | IpcPrimitive
+  | IpcObject
+  | IpcArray
+  | Date
+  | RegExp
+  | ArrayBuffer
+  | Int8Array
+  | Uint8Array
+  | Uint8ClampedArray
+  | Int16Array
+  | Uint16Array
+  | Int32Array
+  | Uint32Array
+  | Float32Array
+  | Float64Array
+  | BigInt64Array
+  | BigUint64Array
+  | Map<IpcSerializable, IpcSerializable>
+  | Set<IpcSerializable>
+  | Error
+  | EvalError
+  | RangeError
+  | ReferenceError
+  | SyntaxError
+  | TypeError
+  | URIError
+  | null;
+
+/**
+ * Primitive types supported by Electron IPC
+ */
+export type IpcPrimitive = string | number | boolean | bigint | undefined;
+
+/**
+ * Object types supported by Electron IPC
+ */
+export type IpcObject = Record<string, IpcSerializable>;
+
+/**
+ * Array types supported by Electron IPC
+ */
+export type IpcArray = IpcSerializable[];

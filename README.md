@@ -25,6 +25,62 @@ npm install electron-json-rpc
 - **Timeout handling** - Configurable timeout for RPC calls
 - **Batch requests** - Support for multiple requests in a single call
 
+## Serializable Types
+
+This library uses Electron's IPC which internally uses the **Structured Clone Algorithm** for serialization. This means you can pass many more types than just JSON:
+
+| Type                | Supported | Notes                                 |
+| ------------------- | --------- | ------------------------------------- |
+| Primitives          | ✅        | string, number, boolean, bigint       |
+| null / undefined    | ✅        | undefined is preserved (not null)     |
+| Plain Objects       | ✅        | With serializable properties          |
+| Arrays              | ✅        | Including nested and sparse arrays    |
+| Date                | ✅        | Preserves date object                 |
+| RegExp              | ✅        | Preserves pattern and flags           |
+| Map / Set           | ✅        | With serializable contents            |
+| ArrayBuffer         | ✅        | Binary data                           |
+| Typed Arrays        | ✅        | Int8Array, Uint8Array, etc.           |
+| Error objects       | ✅        | Including stack trace                 |
+| Circular references | ✅        | Handled correctly                     |
+
+**Not supported:**
+
+- Functions
+- DOM nodes
+- Class instances (except built-ins like Date, Map, Set, Error)
+- Symbols
+
+### Example
+
+```typescript
+// Main process
+rpc.register("getData", () => ({
+  date: new Date(),
+  regex: /test/gi,
+  map: new Map([["key", "value"]]),
+  buffer: new ArrayBuffer(8),
+}));
+
+// Renderer process - all types preserved!
+const data = await rpc.getData();
+console.log(data.date instanceof Date);        // true
+console.log(data.regex instanceof RegExp);      // true
+console.log(data.map instanceof Map);          // true
+console.log(data.buffer instanceof ArrayBuffer); // true
+```
+
+### TypeScript Type
+
+You can use the `IpcSerializable` type to ensure values are serializable:
+
+```typescript
+import type { IpcSerializable } from "electron-json-rpc/types";
+
+function sendToRenderer(data: IpcSerializable) {
+  rpc.publish("event", data); // Type-safe!
+}
+```
+
 ## Quick Start
 
 ### Main Process
