@@ -245,11 +245,16 @@ export interface RpcDebugOptions {
  * ```
  */
 export type IpcSerializable =
-  | IpcPrimitive
-  | IpcObject
-  | IpcArray
+  | string
+  | number
+  | boolean
+  | bigint
+  | undefined
+  | null
   | Date
   | RegExp
+  | { [key: string]: IpcSerializable }
+  | IpcSerializable[]
   | ArrayBuffer
   | Int8Array
   | Uint8Array
@@ -270,20 +275,9 @@ export type IpcSerializable =
   | ReferenceError
   | SyntaxError
   | TypeError
-  | URIError
-  | null;
+  | URIError;
 
 /**
  * Primitive types supported by Electron IPC
  */
 export type IpcPrimitive = string | number | boolean | bigint | undefined;
-
-/**
- * Object types supported by Electron IPC
- */
-export type IpcObject = Record<string, IpcSerializable>;
-
-/**
- * Array types supported by Electron IPC
- */
-export type IpcArray = IpcSerializable[];
