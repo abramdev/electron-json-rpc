@@ -5,6 +5,8 @@ pre-commit:
       run: bun run lint
     oxfmt:
       run: bun run format:check
+    tsc:
+      run: bun run typecheck
 
 commit-msg:
   commands:
