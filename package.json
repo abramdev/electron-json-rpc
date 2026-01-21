@@ -1,6 +1,6 @@
 {
   "name": "electron-json-rpc",
-  "version": "1.1.7",
+  "version": "1.2.0",
   "description": "JSON-RPC implementation for Electron",
   "homepage": "https://github.com/abramdev/electron-json-rpc#readme",
   "bugs": "https://github.com/abramdev/electron-json-rpc/issues",

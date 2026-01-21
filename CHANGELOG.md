@@ -1,3 +1,15 @@
+# [1.2.0](https://github.com/abramdev/electron-json-rpc/compare/v1.1.7...v1.2.0) (2026-01-21)
+
+
+### Bug Fixes
+
+* add setup-node@v22 for semantic-release requirement ([1b82ba9](https://github.com/abramdev/electron-json-rpc/commit/1b82ba98df391ff3970f998a233f9fedbe27876d))
+
+
+### Features
+
+* use OIDC for npm publishing ([cca57a7](https://github.com/abramdev/electron-json-rpc/commit/cca57a75b0b27a4775d2a8886fc5144145d2d9f3))
+
 ## [1.1.7](https://github.com/abramdev/electron-json-rpc/compare/v1.1.6...v1.1.7) (2026-01-21)
 
 
