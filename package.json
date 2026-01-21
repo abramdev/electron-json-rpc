@@ -6,9 +6,9 @@
   "bugs": "https://github.com/abramdev/electron-json-rpc/issues",
   "license": "MIT",
   "repository": {
-  "type": "git",
-  "url": "git+https://github.com/abramdev/electron-json-rpc.git"
-},
+    "type": "git",
+    "url": "git+https://github.com/abramdev/electron-json-rpc.git"
+  },
   "files": [
     "dist"
   ],

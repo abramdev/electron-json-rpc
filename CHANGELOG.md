@@ -1,3 +1,12 @@
+## [1.1.5](https://github.com/abramdev/electron-json-rpc/compare/v1.1.4...v1.1.5) (2026-01-21)
+
+
+### Bug Fixes
+
+* add npm provenance support for OIDC publishing ([3d3353c](https://github.com/abramdev/electron-json-rpc/commit/3d3353c453e32a0af933fccb2506a4dde7d4acba))
+* correct repository format and add NPM_TOKEN to workflow ([0ed0888](https://github.com/abramdev/electron-json-rpc/commit/0ed08880739b33597b050ad95b6b1424adbef1cd))
+* remove npm update step causing permission error in CI ([e13fcb3](https://github.com/abramdev/electron-json-rpc/commit/e13fcb33d895bb74542695790eebe7803153f1b1))
+
 ## [1.1.5](https://github.com/abramdev/electron-json-rpc/compare/v1.1.4...v1.1.5) (2026-01-18)
 
 ### Bug Fixes
