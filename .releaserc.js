@@ -19,12 +19,7 @@ export default {
     ],
     "@semantic-release/release-notes-generator",
     "@semantic-release/changelog",
-    [
-      "@semantic-release/npm",
-      {
-        npmPublishArgs: ["--provenance"],
-      },
-    ],
+    "@semantic-release/npm",
     [
       "@semantic-release/git",
       {
