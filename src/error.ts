@@ -90,22 +90,6 @@ export function isTimeoutError(error: unknown): error is RpcTimeoutError {
 }
 
 /**
- * Error thrown when queue is full and fullBehavior is 'reject'
- */
-export class RpcQueueFullError extends Error {
-  declare readonly name: "RpcQueueFullError";
-  readonly currentSize: number;
-  readonly maxSize: number;
-
-  constructor(currentSize: number, maxSize: number) {
-    super(`RPC queue is full (${currentSize}/${maxSize})`);
-    this.name = "RpcQueueFullError";
-    this.currentSize = currentSize;
-    this.maxSize = maxSize;
-  }
-}
-
-/**
  * Error thrown when connection to main process is lost
  */
 export class RpcConnectionError extends Error {
@@ -120,36 +104,8 @@ export class RpcConnectionError extends Error {
 }
 
 /**
- * Error thrown when request is evicted from queue
- */
-export class RpcQueueEvictedError extends Error {
-  declare readonly name: "RpcQueueEvictedError";
-  readonly reason: "full" | "timeout";
-
-  constructor(reason: "full" | "timeout") {
-    super(`Request evicted from queue: ${reason}`);
-    this.name = "RpcQueueEvictedError";
-    this.reason = reason;
-  }
-}
-
-/**
- * Check if an error is a queue full error
- */
-export function isQueueFullError(error: unknown): error is RpcQueueFullError {
-  return error instanceof RpcQueueFullError;
-}
-
-/**
  * Check if an error is a connection error
  */
 export function isConnectionError(error: unknown): error is RpcConnectionError {
   return error instanceof RpcConnectionError;
-}
-
-/**
- * Check if an error is a queue evicted error
- */
-export function isQueueEvictedError(error: unknown): error is RpcQueueEvictedError {
-  return error instanceof RpcQueueEvictedError;
 }

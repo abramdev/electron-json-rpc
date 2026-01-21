@@ -53,12 +53,10 @@ Multiple client creation functions:
 - `createTypedRpcClient<T>()` - Type-safe client from interface
 - `defineRpcApi<T>()` - Semantic alias for typed client
 - `createRpc()` - Fluent builder pattern with type inference
-- `createQueuedRpcClient()` - Client with queuing and retry logic
 - `createEventBus<T>()` - Typed event subscription
 
 ### Supporting Modules
 - **Stream** (`src/stream.ts`) - Web standard `ReadableStream` for server-sent streams
-- **Queue** (`src/queue.ts`) - Request queuing with configurable retry strategies
 - **Event** (`src/event.ts`) - Pub-sub event system for main-to-renderer
 - **Debug** (`src/debug.ts`) - Debug logging with custom logger support
 

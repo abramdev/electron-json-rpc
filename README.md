@@ -2,7 +2,7 @@
 
 [English](./README.md) | [简体中文](./README.zh-CN.md)
 
-A type-safe IPC library for Electron built on the JSON-RPC 2.0 protocol. Define your API once, get full type inference across main process, preload script, and renderer process. Supports streaming, event bus, queued requests with retry, and validation.
+A type-safe IPC library for Electron built on the JSON-RPC 2.0 protocol. Define your API once, get full type inference across main process, preload script, and renderer process. Supports streaming, event bus, validation, and configurable timeout.
 
 > **Status**: This project is currently in **beta**. The API is subject to change. Feedback and contributions are welcome!
 
@@ -23,25 +23,24 @@ npm install electron-json-rpc
 - **Streaming** - Web standard `ReadableStream` support for server-sent streams
 - **Notifications** - One-way calls without response
 - **Timeout handling** - Configurable timeout for RPC calls
-- **Batch requests** - Support for multiple requests in a single call
 
 ## Serializable Types
 
 This library uses Electron's IPC which internally uses the **Structured Clone Algorithm** for serialization. This means you can pass many more types than just JSON:
 
-| Type                | Supported | Notes                                 |
-| ------------------- | --------- | ------------------------------------- |
-| Primitives          | ✅        | string, number, boolean, bigint       |
-| null / undefined    | ✅        | undefined is preserved (not null)     |
-| Plain Objects       | ✅        | With serializable properties          |
-| Arrays              | ✅        | Including nested and sparse arrays    |
-| Date                | ✅        | Preserves date object                 |
-| RegExp              | ✅        | Preserves pattern and flags           |
-| Map / Set           | ✅        | With serializable contents            |
-| ArrayBuffer         | ✅        | Binary data                           |
-| Typed Arrays        | ✅        | Int8Array, Uint8Array, etc.           |
-| Error objects       | ✅        | Including stack trace                 |
-| Circular references | ✅        | Handled correctly                     |
+| Type                | Supported | Notes                              |
+| ------------------- | --------- | ---------------------------------- |
+| Primitives          | ✅        | string, number, boolean, bigint    |
+| null / undefined    | ✅        | undefined is preserved (not null)  |
+| Plain Objects       | ✅        | With serializable properties       |
+| Arrays              | ✅        | Including nested and sparse arrays |
+| Date                | ✅        | Preserves date object              |
+| RegExp              | ✅        | Preserves pattern and flags        |
+| Map / Set           | ✅        | With serializable contents         |
+| ArrayBuffer         | ✅        | Binary data                        |
+| Typed Arrays        | ✅        | Int8Array, Uint8Array, etc.        |
+| Error objects       | ✅        | Including stack trace              |
+| Circular references | ✅        | Handled correctly                  |
 
 **Not supported:**
 
@@ -63,9 +62,9 @@ rpc.register("getData", () => ({
 
 // Renderer process - all types preserved!
 const data = await rpc.getData();
-console.log(data.date instanceof Date);        // true
-console.log(data.regex instanceof RegExp);      // true
-console.log(data.map instanceof Map);          // true
+console.log(data.date instanceof Date); // true
+console.log(data.regex instanceof RegExp); // true
+console.log(data.map instanceof Map); // true
 console.log(data.buffer instanceof ArrayBuffer); // true
 ```
 
@@ -74,7 +73,7 @@ console.log(data.buffer instanceof ArrayBuffer); // true
 You can use the `IpcSerializable` type to ensure values are serializable:
 
 ```typescript
-import type { IpcSerializable } from "electron-json-rpc/types";
+import type { IpcSerializable } from "electron-json-rpc";
 
 function sendToRenderer(data: IpcSerializable) {
   rpc.publish("event", data); // Type-safe!
@@ -87,9 +86,13 @@ function sendToRenderer(data: IpcSerializable) {
 
 ```typescript
 import { app, BrowserWindow } from "electron";
-import { RpcServer } from "electron-json-rpc/main";
+import { RpcServer, createRpcServer } from "electron-json-rpc/main";
 
+// Option 1: Using class constructor
 const rpc = new RpcServer();
+
+// Option 2: Using factory function (equivalent)
+const rpc = createRpcServer();
 
 // Register methods
 rpc.register("add", (a: number, b: number) => a + b);
@@ -157,6 +160,27 @@ const greeting = await window.rpc.greet("World");
 
 // Non-whitelisted methods require the call method
 const result = await window.rpc.call("otherMethod", arg1, arg2);
+```
+
+#### Using Proxy Mode
+
+If you need a typed proxy for type inference:
+
+```typescript
+import { exposeRpcApi } from "electron-json-rpc/preload";
+import { contextBridge, ipcRenderer } from "electron";
+
+exposeRpcApi({
+  contextBridge,
+  ipcRenderer,
+  methods: ["add", "greet"],
+});
+
+// In renderer, you can also use proxy for type inference
+const api = window.rpc?.proxy<{
+  add: (a: number, b: number) => number;
+  greet: (name: string) => string;
+}>();
 ```
 
 ### Renderer Process
@@ -298,152 +322,6 @@ api.log("Done"); // notification (void)
 // Stream support
 for await (const n of api.dataStream(10)) {
   console.log(n);
-}
-```
-
-## Request Queue
-
-For applications that need to handle unreliable connections or busy main processes, the queued RPC client provides automatic request queuing with retry logic.
-
-### Basic Usage
-
-```typescript
-import { createQueuedRpcClient } from "electron-json-rpc/renderer";
-
-const rpc = createQueuedRpcClient({
-  maxSize: 50, // Maximum queue size
-  fullBehavior: "evictOldest", // What to do when queue is full
-  timeout: 10000, // Request timeout in ms
-});
-
-// Call a method - will be queued if main process is busy
-const result = await rpc.call("getData", id);
-
-// Send a notification (not queued - fire and forget)
-rpc.notify("log", "Hello from renderer!");
-
-// Get queue status
-console.log(rpc.getQueueStatus());
-// { pending: 2, active: 1, maxSize: 50, isPaused: false, isConnected: true }
-```
-
-### Queue Configuration
-
-```typescript
-const rpc = createQueuedRpcClient({
-  // Queue size settings
-  maxSize: 100,
-  fullBehavior: "reject", // 'reject' | 'evict' | 'evictOldest'
-
-  // Retry settings
-  retry: {
-    maxAttempts: 3, // Maximum retry attempts
-    backoff: "exponential", // 'fixed' | 'exponential'
-    initialDelay: 1000, // Initial delay in ms
-    maxDelay: 10000, // Maximum delay in ms
-  },
-
-  // Connection health settings
-  healthCheck: true, // Enable connection health check
-  healthCheckInterval: 5000, // Health check interval in ms
-});
-```
-
-### Queue Full Behavior
-
-When the queue reaches maximum size:
-
-- **`"reject"`** (default): Throw `RpcQueueFullError` for new requests
-- **`"evict"`**: Evict the current request being added
-- **`"evictOldest"`**: Remove the oldest request from the queue
-
-```typescript
-// Reject mode (default)
-const rpc = createQueuedRpcClient({
-  maxSize: 10,
-  fullBehavior: "reject",
-});
-
-try {
-  await rpc.call("someMethod");
-} catch (error) {
-  if (error.name === "RpcQueueFullError") {
-    console.log("Queue is full!");
-  }
-}
-```
-
-### Queue Control Methods
-
-```typescript
-const rpc = createQueuedRpcClient();
-
-// Check if queue is healthy (connected and not paused)
-if (rpc.isQueueHealthy()) {
-  await rpc.call("someMethod");
-}
-
-// Get detailed queue status
-const status = rpc.getQueueStatus();
-console.log(`Pending: ${status.pending}, Active: ${status.active}`);
-
-// Pause queue processing (incoming requests will queue)
-rpc.pauseQueue();
-
-// Resume queue processing
-rpc.resumeQueue();
-
-// Clear all pending requests
-rpc.clearQueue();
-```
-
-### Retry Strategy
-
-The queue automatically retries failed requests based on the configured strategy:
-
-```typescript
-const rpc = createQueuedRpcClient({
-  retry: {
-    maxAttempts: 3,
-    backoff: "exponential", // or "fixed"
-    initialDelay: 1000,
-    maxDelay: 10000,
-  },
-});
-
-// Exponential backoff: 1000ms, 2000ms, 4000ms, ...
-// Fixed backoff: 1000ms, 1000ms, 1000ms, ...
-```
-
-Requests are retried on:
-
-- Timeout errors (`RpcTimeoutError`)
-- Connection errors (`RpcConnectionError`)
-
-### Error Handling
-
-```typescript
-import {
-  RpcQueueFullError,
-  RpcConnectionError,
-  RpcQueueEvictedError,
-  isQueueFullError,
-  isConnectionError,
-  isQueueEvictedError,
-} from "electron-json-rpc/renderer";
-
-const rpc = createQueuedRpcClient();
-
-try {
-  await rpc.call("someMethod");
-} catch (error) {
-  if (isQueueFullError(error)) {
-    console.log(`Queue full: ${error.currentSize}/${error.maxSize}`);
-  } else if (isConnectionError(error)) {
-    console.log(`Connection lost: ${error.message}`);
-  } else if (isQueueEvictedError(error)) {
-    console.log(`Request evicted: ${error.reason}`);
-  }
 }
 ```
 
@@ -683,7 +561,7 @@ while (true) {
   if (done) break;
   console.log(value);
 }
-reader.release();
+reader.releaseLock();
 
 // Pipe to Response
 const response = new Response(rpc.stream("fetchData", "https://api.example.com/data"));
@@ -693,7 +571,7 @@ const blob = await response.blob();
 ### Stream Utilities
 
 ```typescript
-import { asyncGeneratorToStream, iterableToStream } from "electron-json-rpc/stream";
+import { asyncGeneratorToStream, iterableToStream, readStream } from "electron-json-rpc/stream";
 
 // Convert async generator to stream
 rpc.registerStream("numbers", () => {
@@ -709,6 +587,10 @@ rpc.registerStream("numbers", () => {
 rpc.registerStream("items", () => {
   return iterableToStream([1, 2, 3, 4, 5]);
 });
+
+// Read entire stream into array (utility function)
+const allChunks = await readStream<number>(stream);
+console.log(allChunks); // [1, 2, 3, 4, 5]
 ```
 
 ## Validation
@@ -790,40 +672,6 @@ rpc.register(
       const errors = Value.Errors(UserSchema, params[0]);
       if (errors.length > 0) {
         throw new Error([...errors][0].message);
-      }
-    },
-  },
-);
-```
-
-### With Ajv
-
-```typescript
-import Ajv from "ajv";
-import { RpcServer } from "electron-json-rpc/main";
-
-const rpc = new RpcServer();
-const ajv = new Ajv();
-
-const validateUser = ajv.compile({
-  type: "object",
-  properties: {
-    name: { type: "string", minLength: 1 },
-    age: { type: "number", minimum: 0, maximum: 150 },
-  },
-  required: ["name", "age"],
-  additionalProperties: false,
-});
-
-rpc.register(
-  "createUser",
-  async (user) => {
-    return db.users.create(user);
-  },
-  {
-    validate: (params) => {
-      if (!validateUser(params[0])) {
-        throw new Error(ajv.errorsText(validateUser.errors));
       }
     },
   },
@@ -938,34 +786,6 @@ api.log("hello");
 
 Use the proxy exposed by preload (if methods whitelist was provided).
 
-#### `createQueuedRpcClient(options?)`
-
-Create a queued RPC client with automatic retry and connection health checking.
-
-```typescript
-const rpc = createQueuedRpcClient({
-  maxSize: 100, // Maximum queue size (default: 100)
-  fullBehavior: "reject", // 'reject' | 'evict' | 'evictOldest'
-  timeout: 30000, // Request timeout in ms (default: 30000)
-  retry: {
-    maxAttempts: 3, // Maximum retry attempts (default: 3)
-    backoff: "exponential", // 'fixed' | 'exponential'
-    initialDelay: 1000, // Initial delay in ms (default: 1000)
-    maxDelay: 10000, // Maximum delay in ms (default: 10000)
-  },
-  healthCheck: true, // Enable health check (default: true)
-  healthCheckInterval: 5000, // Health check interval in ms (default: 5000)
-  apiName: "rpc", // API name (default: 'rpc')
-});
-
-// Queue control methods
-rpc.getQueueStatus(); // Returns QueueStatus
-rpc.clearQueue(); // Clear all pending requests
-rpc.pauseQueue(); // Pause queue processing
-rpc.resumeQueue(); // Resume queue processing
-rpc.isQueueHealthy(); // Returns true if connected and not paused
-```
-
 #### `createEventBus<T>(options?)`
 
 Create a typed event bus for real-time events from main process.
@@ -992,6 +812,24 @@ events.once("data-changed", (data) => {
 });
 ```
 
+### Stream Utilities (`electron-json-rpc/stream`)
+
+- `isReadableStream(value: unknown): boolean` - Check if a value is a ReadableStream
+- `readStream<T>(stream: ReadableStream<T>): Promise<T[]>` - Read entire stream into an array
+- `asyncGeneratorToStream<T>(generator: () => AsyncGenerator<T>): ReadableStream<T>` - Convert async generator to stream
+- `iterableToStream<T>(iterable: Iterable<T> | AsyncIterable<T>): ReadableStream<T>` - Convert iterable to stream
+
+### Error Handling (`electron-json-rpc/error`)
+
+- `createJsonRpcError(code, message, data?): JsonRpcError` - Create a JSON-RPC error object
+- `errors` - Predefined error creators (parseError, invalidRequest, methodNotFound, invalidParams, internalError)
+- `isJsonRpcError(error: unknown): boolean` - Check if an error is a JSON-RPC error
+- `errorToJsonRpc(error: unknown): JsonRpcError` - Convert an Error object to JSON-RPC error
+- `RpcTimeoutError` - Timeout error class
+- `isTimeoutError(error: unknown): boolean` - Check if error is a timeout error
+- `RpcConnectionError` - Connection error class
+- `isConnectionError(error: unknown): boolean` - Check if error is a connection error
+
 ## Error Handling
 
 JSON-RPC errors are returned with standard error codes:
@@ -1004,7 +842,29 @@ JSON-RPC errors are returned with standard error codes:
 | -32602 | Invalid params   |
 | -32603 | Internal error   |
 
-Timeout errors use a custom `RpcTimeoutError` class.
+**Custom Error Classes:**
+
+- **`RpcTimeoutError`** - Thrown when an RPC call exceeds timeout duration
+- **`RpcConnectionError`** - Thrown when connection to main process is lost
+
+```typescript
+import {
+  RpcTimeoutError,
+  RpcConnectionError,
+  isTimeoutError,
+  isConnectionError,
+} from "electron-json-rpc/error";
+
+try {
+  await rpc.call("someMethod");
+} catch (error) {
+  if (isTimeoutError(error)) {
+    console.log(`Request timed out after ${error.timeout}ms`);
+  } else if (isConnectionError(error)) {
+    console.log("Connection lost:", error.message);
+  }
+}
+```
 
 ## Bundle Size
 
@@ -1014,12 +874,10 @@ ESM bundles:
 | ---------------- | ------- |
 | Preload          | 3.95 kB |
 | Main             | 2.97 kB |
-| Queue            | 1.99 kB |
 | Debug            | 1.50 kB |
 | Renderer/client  | 1.14 kB |
 | Renderer/builder | 1.21 kB |
 | Renderer/event   | 1.15 kB |
-| Renderer/queue   | 0.93 kB |
 | Stream           | 0.72 kB |
 | Event            | 0.43 kB |
 

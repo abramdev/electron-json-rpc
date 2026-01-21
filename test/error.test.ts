@@ -10,12 +10,8 @@ import {
   errorToJsonRpc,
   RpcTimeoutError,
   isTimeoutError,
-  RpcQueueFullError,
-  isQueueFullError,
   RpcConnectionError,
   isConnectionError,
-  RpcQueueEvictedError,
-  isQueueEvictedError,
 } from "../src/error.js";
 import { JsonRpcErrorCode } from "../src/types.js";
 
@@ -190,33 +186,6 @@ describe("error utilities", () => {
     });
   });
 
-  describe("RpcQueueFullError", () => {
-    it("creates queue full error with current and max size", () => {
-      const error = new RpcQueueFullError(10, 5);
-      expect(error.name).toBe("RpcQueueFullError");
-      expect(error.message).toBe("RPC queue is full (10/5)");
-      expect(error.currentSize).toBe(10);
-      expect(error.maxSize).toBe(5);
-    });
-
-    it("is an Error instance", () => {
-      const error = new RpcQueueFullError(10, 5);
-      expect(error instanceof Error).toBe(true);
-    });
-  });
-
-  describe("isQueueFullError", () => {
-    it("returns true for RpcQueueFullError", () => {
-      const error = new RpcQueueFullError(10, 5);
-      expect(isQueueFullError(error)).toBe(true);
-    });
-
-    it("returns false for other errors", () => {
-      expect(isQueueFullError(new Error())).toBe(false);
-      expect(isQueueFullError({ name: "RpcQueueFullError" } as any)).toBe(false);
-    });
-  });
-
   describe("RpcConnectionError", () => {
     it("creates connection error with message", () => {
       const error = new RpcConnectionError("Connection lost");
@@ -247,39 +216,6 @@ describe("error utilities", () => {
     it("returns false for other errors", () => {
       expect(isConnectionError(new Error())).toBe(false);
       expect(isConnectionError({ name: "RpcConnectionError" } as any)).toBe(false);
-    });
-  });
-
-  describe("RpcQueueEvictedError", () => {
-    it("creates evicted error with full reason", () => {
-      const error = new RpcQueueEvictedError("full");
-      expect(error.name).toBe("RpcQueueEvictedError");
-      expect(error.message).toBe("Request evicted from queue: full");
-      expect(error.reason).toBe("full");
-    });
-
-    it("creates evicted error with timeout reason", () => {
-      const error = new RpcQueueEvictedError("timeout");
-      expect(error.name).toBe("RpcQueueEvictedError");
-      expect(error.message).toBe("Request evicted from queue: timeout");
-      expect(error.reason).toBe("timeout");
-    });
-
-    it("is an Error instance", () => {
-      const error = new RpcQueueEvictedError("full");
-      expect(error instanceof Error).toBe(true);
-    });
-  });
-
-  describe("isQueueEvictedError", () => {
-    it("returns true for RpcQueueEvictedError", () => {
-      const error = new RpcQueueEvictedError("full");
-      expect(isQueueEvictedError(error)).toBe(true);
-    });
-
-    it("returns false for other errors", () => {
-      expect(isQueueEvictedError(new Error())).toBe(false);
-      expect(isQueueEvictedError({ name: "RpcQueueEvictedError" } as any)).toBe(false);
     });
   });
 });

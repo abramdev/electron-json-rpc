@@ -2,7 +2,7 @@
 
 [English](./README.md) | [简体中文](./README.zh-CN.md)
 
-基于 JSON-RPC 2.0 协议的 Electron 类型安全 IPC 通信库。定义一次 API，即可在主进程、preload 脚本和渲染进程中获得完整的类型推断。支持流式传输、事件总线、带重试的请求队列和参数验证。
+基于 JSON-RPC 2.0 协议的 Electron 类型安全 IPC 通信库。定义一次 API，即可在主进程、preload 脚本和渲染进程中获得完整的类型推断。支持流式传输、事件总线、参数验证和可配置的超时处理。
 
 > **状态**: 本项目目前处于 **beta** 阶段。API 可能会发生变化。欢迎反馈和贡献！
 
@@ -21,65 +21,8 @@ npm install electron-json-rpc
 - **事件总线** - 内置发布-订阅模式，支持实时事件
 - **参数验证** - 通用验证器接口，兼容任何验证库
 - **流式传输** - 支持 Web 标准 `ReadableStream` 的服务端推送流
-- **通知** - 无需响应的单向调用
+- **通知 Notification** - 支持 JSON-RPC 2.0 通知，无需响应的单向调用
 - **超时处理** - 可配置的 RPC 调用超时
-- **批量请求** - 支持单次调用发送多个请求
-
-## 可序列化类型
-
-本库使用 Electron IPC，内部使用**结构化克隆算法**（Structured Clone Algorithm）进行序列化。这意味着你可以传递比 JSON 更多的类型：
-
-| 类型                | 支持 | 说明                                   |
-| ------------------- | ---- | -------------------------------------- |
-| 基本类型            | ✅   | string、number、boolean、bigint        |
-| null / undefined    | ✅   | undefined 会保留（不会像 JSON 那样变成 null） |
-| 普通对象            | ✅   | 包含可序列化属性的对象                 |
-| 数组                | ✅   | 包括嵌套数组和稀疏数组                 |
-| Date                | ✅   | 保留 Date 对象                         |
-| RegExp              | ✅   | 保留正则表达式和标志                   |
-| Map / Set           | ✅   | 内容可序列化的 Map 和 Set              |
-| ArrayBuffer         | ✅   | 二进制数据                             |
-| Typed Arrays        | ✅   | Int8Array、Uint8Array 等               |
-| Error 对象          | ✅   | 包括堆栈信息                           |
-| 循环引用            | ✅   | 可以正确处理                           |
-
-**不支持的类型：**
-
-- 函数
-- DOM 节点
-- 类实例（除了内置类型如 Date、Map、Set、Error）
-- Symbol
-
-### 示例
-
-```typescript
-// 主进程
-rpc.register("getData", () => ({
-  date: new Date(),
-  regex: /test/gi,
-  map: new Map([["key", "value"]]),
-  buffer: new ArrayBuffer(8),
-}));
-
-// 渲染进程 - 所有类型都正确保留！
-const data = await rpc.getData();
-console.log(data.date instanceof Date);        // true
-console.log(data.regex instanceof RegExp);      // true
-console.log(data.map instanceof Map);          // true
-console.log(data.buffer instanceof ArrayBuffer); // true
-```
-
-### TypeScript 类型
-
-你可以使用 `IpcSerializable` 类型来确保值是可序列化的：
-
-```typescript
-import type { IpcSerializable } from "electron-json-rpc/types";
-
-function sendToRenderer(data: IpcSerializable) {
-  rpc.publish("event", data); // 类型安全！
-}
-```
 
 ## 快速开始
 
@@ -87,9 +30,13 @@ function sendToRenderer(data: IpcSerializable) {
 
 ```typescript
 import { app, BrowserWindow } from "electron";
-import { RpcServer } from "electron-json-rpc/main";
+import { RpcServer, createRpcServer } from "electron-json-rpc/main";
 
+// 方式 1：使用类构造函数
 const rpc = new RpcServer();
+
+// 方式 2：使用工厂函数（等效）
+const rpc = createRpcServer();
 
 // 注册方法
 rpc.register("add", (a: number, b: number) => a + b);
@@ -159,6 +106,27 @@ const greeting = await window.rpc.greet("世界");
 const result = await window.rpc.call("otherMethod", arg1, arg2);
 ```
 
+#### 使用代理模式
+
+如果需要类型推断的类型化代理：
+
+```typescript
+import { exposeRpcApi } from "electron-json-rpc/preload";
+import { contextBridge, ipcRenderer } from "electron";
+
+exposeRpcApi({
+  contextBridge,
+  ipcRenderer,
+  methods: ["add", "greet"],
+});
+
+// 在渲染进程中，也可以使用 proxy 进行类型推断
+const api = window.rpc?.proxy<{
+  add: (a: number, b: number) => number;
+  greet: (name: string) => string;
+}>();
+```
+
 ### 渲染进程
 
 ```typescript
@@ -172,6 +140,58 @@ console.log(result); // 3
 
 // 发送通知（无需响应）
 rpc.notify("log", "来自渲染进程的问候！");
+```
+
+## 可序列化类型
+
+本库使用 Electron IPC，内部使用**结构化克隆算法**（Structured Clone Algorithm）进行序列化。这意味着你可以传递比 JSON 更多的类型：
+
+| 类型                                         | 支持 | 说明                                          |
+| -------------------------------------------- | ---- | --------------------------------------------- |
+| 基本类型                                     | ✅   | string、number、boolean、bigint               |
+| null / undefined                             | ✅   | undefined 会保留（不会像 JSON 那样变成 null） |
+| 普通对象                                     | ✅   | 包含可序列化属性的对象                        |
+| 数组                                         | ✅   | 包括嵌套数组和稀疏数组                        |
+| Date                                         | ✅   | 保留 Date 对象                                |
+| RegExp                                       | ✅   | 保留正则表达式和标志                          |
+| Map / Set                                    | ✅   | 内容可序列化的 Map 和 Set                     |
+| ArrayBuffer                                  | ✅   | 二进制数据                                    |
+| Typed Arrays                                 | ✅   | Int8Array、Uint8Array 等                      |
+| Error 对象                                   | ✅   | 包括堆栈信息                                  |
+| 循环引用                                     | ✅   | 可以正确处理                                  |
+| 函数                                         | ❌   | -                                             |
+| 类实例（除内置类型如 Date、Map、Set、Error） | ❌   | -                                             |
+| Symbol                                       | ❌   | -                                             |
+
+### 示例
+
+```typescript
+// 主进程
+rpc.register("getData", () => ({
+  date: new Date(),
+  regex: /test/gi,
+  map: new Map([["key", "value"]]),
+  buffer: new ArrayBuffer(8),
+}));
+
+// 渲染进程 - 所有类型都正确保留！
+const data = await rpc.getData();
+console.log(data.date instanceof Date); // true
+console.log(data.regex instanceof RegExp); // true
+console.log(data.map instanceof Map); // true
+console.log(data.buffer instanceof ArrayBuffer); // true
+```
+
+### TypeScript 类型
+
+你可以使用 `IpcSerializable` 类型来确保值是可序列化的：
+
+```typescript
+import type { IpcSerializable } from "electron-json-rpc";
+
+function sendToRenderer(data: IpcSerializable) {
+  rpc.publish("event", data); // 类型安全！
+}
 ```
 
 ## 通信模式对比
@@ -301,155 +321,7 @@ for await (const n of api.dataStream(10)) {
 }
 ```
 
-## 请求队列
-
-对于需要处理不可靠连接或繁忙主进程的应用，队列 RPC 客户端提供自动请求排队和重试逻辑。
-
-### 基本用法
-
-```typescript
-import { createQueuedRpcClient } from "electron-json-rpc/renderer";
-
-const rpc = createQueuedRpcClient({
-  maxSize: 50, // 最大队列大小
-  fullBehavior: "evictOldest", // 队列满时的行为
-  timeout: 10000, // 请求超时时间（毫秒）
-});
-
-// 调用方法 - 如果主进程繁忙，请求将被排队
-const result = await rpc.call("getData", id);
-
-// 发送通知（不排队 - 发后即忘）
-rpc.notify("log", "来自渲染进程的问候！");
-
-// 获取队列状态
-console.log(rpc.getQueueStatus());
-// { pending: 2, active: 1, maxSize: 50, isPaused: false, isConnected: true }
-```
-
-### 队列配置
-
-```typescript
-const rpc = createQueuedRpcClient({
-  // 队列大小设置
-  maxSize: 100,
-  fullBehavior: "reject", // 'reject' | 'evict' | 'evictOldest'
-
-  // 重试设置
-  retry: {
-    maxAttempts: 3, // 最大重试次数
-    backoff: "exponential", // 'fixed' | 'exponential'
-    initialDelay: 1000, // 初始延迟（毫秒）
-    maxDelay: 10000, // 最大延迟（毫秒）
-  },
-
-  // 连接健康检查设置
-  healthCheck: true, // 启用连接健康检查
-  healthCheckInterval: 5000, // 健康检查间隔（毫秒）
-});
-```
-
-### 队列满时的行为
-
-当队列达到最大大小时：
-
-- **`"reject"`**（默认）：为新请求抛出 `RpcQueueFullError`
-- **`"evict"`**: 驱逐当前正在添加的请求
-- **`"evictOldest"`**: 从队列中移除最旧的请求
-
-```typescript
-// 拒绝模式（默认）
-const rpc = createQueuedRpcClient({
-  maxSize: 10,
-  fullBehavior: "reject",
-});
-
-try {
-  await rpc.call("someMethod");
-} catch (error) {
-  if (error.name === "RpcQueueFullError") {
-    console.log("队列已满！");
-  }
-}
-```
-
-### 队列控制方法
-
-```typescript
-const rpc = createQueuedRpcClient();
-
-// 检查队列是否健康（已连接且未暂停）
-if (rpc.isQueueHealthy()) {
-  await rpc.call("someMethod");
-}
-
-// 获取详细的队列状态
-const status = rpc.getQueueStatus();
-console.log(`待处理: ${status.pending}, 活跃: ${status.active}`);
-
-// 暂停队列处理（新请求将排队）
-rpc.pauseQueue();
-
-// 恢复队列处理
-rpc.resumeQueue();
-
-// 清除所有待处理的请求
-rpc.clearQueue();
-```
-
-### 重试策略
-
-队列会根据配置的策略自动重试失败的请求：
-
-```typescript
-const rpc = createQueuedRpcClient({
-  retry: {
-    maxAttempts: 3,
-    backoff: "exponential", // 或 "fixed"
-    initialDelay: 1000,
-    maxDelay: 10000,
-  },
-});
-
-// 指数退避: 1000ms, 2000ms, 4000ms, ...
-// 固定延迟: 1000ms, 1000ms, 1000ms, ...
-```
-
-以下情况的请求会被重试：
-
-- 超时错误 (`RpcTimeoutError`)
-- 连接错误 (`RpcConnectionError`)
-
-### 错误处理
-
-```typescript
-import {
-  RpcQueueFullError,
-  RpcConnectionError,
-  RpcQueueEvictedError,
-  isQueueFullError,
-  isConnectionError,
-  isQueueEvictedError,
-} from "electron-json-rpc/renderer";
-
-const rpc = createQueuedRpcClient();
-
-try {
-  await rpc.call("someMethod");
-} catch (error) {
-  if (isQueueFullError(error)) {
-    console.log(`队列已满: ${error.currentSize}/${error.maxSize}`);
-  } else if (isConnectionError(error)) {
-    console.log(`连接丢失: ${error.message}`);
-  } else if (isQueueEvictedError(error)) {
-    console.log(`请求被驱逐: ${error.reason}`);
-  }
-}
-```
-
 ## 调试日志
-
-渲染端客户端提供内置的调试日志功能，用于监控 RPC 请求和响应。这对于开发和故障排查非常有用。
 
 ### 全局调试模式
 
@@ -683,7 +555,7 @@ while (true) {
   if (done) break;
   console.log(value);
 }
-reader.release();
+reader.releaseLock();
 
 // 通过 Response 管道传输
 const response = new Response(rpc.stream("fetchData", "https://api.example.com/data"));
@@ -693,7 +565,7 @@ const blob = await response.blob();
 ### 流工具
 
 ```typescript
-import { asyncGeneratorToStream, iterableToStream } from "electron-json-rpc/stream";
+import { asyncGeneratorToStream, iterableToStream, readStream } from "electron-json-rpc/stream";
 
 // 将异步生成器转换为流
 rpc.registerStream("numbers", () => {
@@ -709,6 +581,10 @@ rpc.registerStream("numbers", () => {
 rpc.registerStream("items", () => {
   return iterableToStream([1, 2, 3, 4, 5]);
 });
+
+// 将整个流读入数组（工具函数）
+const allChunks = await readStream<number>(stream);
+console.log(allChunks); // [1, 2, 3, 4, 5]
 ```
 
 ## 参数验证
@@ -790,40 +666,6 @@ rpc.register(
       const errors = Value.Errors(UserSchema, params[0]);
       if (errors.length > 0) {
         throw new Error([...errors][0].message);
-      }
-    },
-  },
-);
-```
-
-### 使用 Ajv
-
-```typescript
-import Ajv from "ajv";
-import { RpcServer } from "electron-json-rpc/main";
-
-const rpc = new RpcServer();
-const ajv = new Ajv();
-
-const validateUser = ajv.compile({
-  type: "object",
-  properties: {
-    name: { type: "string", minLength: 1 },
-    age: { type: "number", minimum: 0, maximum: 150 },
-  },
-  required: ["name", "age"],
-  additionalProperties: false,
-});
-
-rpc.register(
-  "createUser",
-  async (user) => {
-    return db.users.create(user);
-  },
-  {
-    validate: (params) => {
-      if (!validateUser(params[0])) {
-        throw new Error(ajv.errorsText(validateUser.errors));
       }
     },
   },
@@ -938,34 +780,6 @@ api.log("你好");
 
 使用 preload 暴露的代理（如果提供了方法白名单）。
 
-#### `createQueuedRpcClient(options?)`
-
-创建具有自动重试和连接健康检查的队列 RPC 客户端。
-
-```typescript
-const rpc = createQueuedRpcClient({
-  maxSize: 100, // 最大队列大小（默认: 100）
-  fullBehavior: "reject", // 'reject' | 'evict' | 'evictOldest'
-  timeout: 30000, // 请求超时时间（毫秒，默认: 30000）
-  retry: {
-    maxAttempts: 3, // 最大重试次数（默认: 3）
-    backoff: "exponential", // 'fixed' | 'exponential'
-    initialDelay: 1000, // 初始延迟（毫秒，默认: 1000）
-    maxDelay: 10000, // 最大延迟（毫秒，默认: 10000）
-  },
-  healthCheck: true, // 启用健康检查（默认: true）
-  healthCheckInterval: 5000, // 健康检查间隔（毫秒，默认: 5000）
-  apiName: "rpc", // API 名称（默认: 'rpc'）
-});
-
-// 队列控制方法
-rpc.getQueueStatus(); // 返回 QueueStatus
-rpc.clearQueue(); // 清除所有待处理的请求
-rpc.pauseQueue(); // 暂停队列处理
-rpc.resumeQueue(); // 恢复队列处理
-rpc.isQueueHealthy(); // 如果已连接且未暂停则返回 true
-```
-
 #### `createEventBus<T>(options?)`
 
 创建用于主进程实时事件的类型化事件总线。
@@ -992,6 +806,24 @@ events.once("data-changed", (data) => {
 });
 ```
 
+### 流工具 (`electron-json-rpc/stream`)
+
+- `isReadableStream(value: unknown): boolean` - 检查值是否为 ReadableStream
+- `readStream<T>(stream: ReadableStream<T>): Promise<T[]>` - 将整个流读入数组
+- `asyncGeneratorToStream<T>(generator: () => AsyncGenerator<T>): ReadableStream<T>` - 将异步生成器转换为流
+- `iterableToStream<T>(iterable: Iterable<T> | AsyncIterable<T>): ReadableStream<T>` - 将可迭代对象转换为流
+
+### 错误处理 (`electron-json-rpc/error`)
+
+- `createJsonRpcError(code, message, data?): JsonRpcError` - 创建 JSON-RPC 错误对象
+- `errors` - 预定义错误创建器 (parseError, invalidRequest, methodNotFound, invalidParams, internalError)
+- `isJsonRpcError(error: unknown): boolean` - 检查错误是否为 JSON-RPC 错误
+- `errorToJsonRpc(error: unknown): JsonRpcError` - 将 Error 对象转换为 JSON-RPC 错误
+- `RpcTimeoutError` - 超时错误类
+- `isTimeoutError(error: unknown): boolean` - 检查错误是否为超时错误
+- `RpcConnectionError` - 连接错误类
+- `isConnectionError(error: unknown): boolean` - 检查错误是否为连接错误
+
 ## 错误处理
 
 JSON-RPC 错误返回标准错误码：
@@ -1004,7 +836,29 @@ JSON-RPC 错误返回标准错误码：
 | -32602 | Invalid params   |
 | -32603 | Internal error   |
 
-超时错误使用自定义的 `RpcTimeoutError` 类。
+**自定义错误类:**
+
+- **`RpcTimeoutError`** - RPC 调用超时时抛出
+- **`RpcConnectionError`** - 与主进程连接丢失时抛出
+
+```typescript
+import {
+  RpcTimeoutError,
+  RpcConnectionError,
+  isTimeoutError,
+  isConnectionError,
+} from "electron-json-rpc/error";
+
+try {
+  await rpc.call("someMethod");
+} catch (error) {
+  if (isTimeoutError(error)) {
+    console.log(`请求在 ${error.timeout}ms 后超时`);
+  } else if (isConnectionError(error)) {
+    console.log("连接丢失:", error.message);
+  }
+}
+```
 
 ## 包大小
 
@@ -1014,12 +868,10 @@ ESM 打包大小：
 | ---------------- | ------- |
 | Preload          | 3.95 kB |
 | Main             | 2.97 kB |
-| Queue            | 1.99 kB |
 | Debug            | 1.50 kB |
 | Renderer/client  | 1.14 kB |
 | Renderer/builder | 1.21 kB |
 | Renderer/event   | 1.15 kB |
-| Renderer/queue   | 0.93 kB |
 | Stream           | 0.72 kB |
 | Event            | 0.43 kB |
 
