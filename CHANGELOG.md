@@ -1,3 +1,12 @@
+## [1.1.7](https://github.com/abramdev/electron-json-rpc/compare/v1.1.6...v1.1.7) (2026-01-21)
+
+
+### Bug Fixes
+
+* add setup-node without registry-url ([62ada33](https://github.com/abramdev/electron-json-rpc/commit/62ada332fd0b4545f90c8808ba5c0ae6e45b7e78))
+* remove OIDC config and use NPM_TOKEN for authentication ([1ea5e0b](https://github.com/abramdev/electron-json-rpc/commit/1ea5e0b7d518bbba709063c916f19b593c8fa23a))
+* remove setup-node to avoid npmrc conflict ([2c2498e](https://github.com/abramdev/electron-json-rpc/commit/2c2498e1457a49b408f462a90150fdbaa060c3c9))
+
 ## [1.1.6](https://github.com/abramdev/electron-json-rpc/compare/v1.1.5...v1.1.6) (2026-01-21)
 
 ## [1.1.5](https://github.com/abramdev/electron-json-rpc/compare/v1.1.4...v1.1.5) (2026-01-21)
